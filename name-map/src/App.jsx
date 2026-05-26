@@ -34,7 +34,7 @@ export default function App() {
 
 function AuthedApp({ session }) {
   const { circles, byId } = useCircles(session);
-  const { people, loading, create, update, remove } = usePeople(session);
+  const { people, loading, create, bulkCreate, update, remove } = usePeople(session);
 
   const shared = { people, circles, byCircle: byId, onUpdate: update, onDelete: remove };
 
@@ -50,7 +50,15 @@ function AuthedApp({ session }) {
           <Route path="/directory" element={<DirectoryView {...shared} />} />
           <Route
             path="/add"
-            element={<AddPersonModal session={session} circles={circles} onCreate={create} />}
+            element={
+              <AddPersonModal
+                session={session}
+                circles={circles}
+                people={people}
+                onCreate={create}
+                onBulkCreate={bulkCreate}
+              />
+            }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

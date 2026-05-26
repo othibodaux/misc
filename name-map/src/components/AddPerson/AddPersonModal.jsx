@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageUploader from './ImageUploader';
 import ProfileForm from './ProfileForm';
+import ImportLinkedIn from './ImportLinkedIn';
 import { uploadPhoto } from '../../lib/photos';
 import { todayISO } from '../../lib/srs';
 
@@ -18,7 +19,7 @@ const EMPTY = {
   notes: '',
 };
 
-export default function AddPersonModal({ session, circles, onCreate }) {
+export default function AddPersonModal({ session, circles, people, onCreate, onBulkCreate }) {
   const navigate = useNavigate();
   const [values, setValues] = useState(EMPTY);
   const [file, setFile] = useState(null);
@@ -69,6 +70,12 @@ export default function AddPersonModal({ session, circles, onCreate }) {
   return (
     <div className="mx-auto max-w-md px-4 py-5">
       <h1 className="mb-4 text-xl font-semibold text-white">Add a person</h1>
+
+      <ImportLinkedIn people={people} circles={circles} onBulkCreate={onBulkCreate} />
+
+      <p className="mt-5 mb-2 text-center text-xs uppercase tracking-wide text-gray-500">
+        or add one person
+      </p>
 
       <div className="card p-4">
         <ImageUploader

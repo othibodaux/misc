@@ -12,6 +12,7 @@ const GRADES = [
 
 export default function MemoryTest({ people, circles, byCircle, onUpdate }) {
   const [circleFilter, setCircleFilter] = useState('all');
+  const [photosOnly, setPhotosOnly] = useState(true);
   const [queue, setQueue] = useState([]);
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -19,10 +20,12 @@ export default function MemoryTest({ people, circles, byCircle, onUpdate }) {
   const [done, setDone] = useState(0);
 
   const pool = useMemo(() => {
-    if (circleFilter === 'all') return people;
-    if (circleFilter === 'none') return people.filter((p) => !p.circle_id);
-    return people.filter((p) => p.circle_id === circleFilter);
-  }, [people, circleFilter]);
+    let list = people;
+    if (circleFilter === 'none') list = list.filter((p) => !p.circle_id);
+    else if (circleFilter !== 'all') list = list.filter((p) => p.circle_id === circleFilter);
+    if (photosOnly) list = list.filter((p) => p.photo_url);
+    return list;
+  }, [people, circleFilter, photosOnly]);
 
   function start() {
     setQueue(buildQueue(pool));
@@ -36,7 +39,7 @@ export default function MemoryTest({ people, circles, byCircle, onUpdate }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset session state when filter/data changes
     start();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuild only on filter or roster-size change
-  }, [circleFilter, people.length]);
+  }, [circleFilter, photosOnly, people.length]);
 
   const current = queue[idx] || null;
   const due = dueCount(pool);
@@ -51,11 +54,21 @@ export default function MemoryTest({ people, circles, byCircle, onUpdate }) {
     setIdx((i) => i + 1);
   }
 
+  const shellProps = { circles, circleFilter, setCircleFilter, photosOnly, setPhotosOnly };
+
   if (pool.length === 0) {
+    const blockedByPhotos = photosOnly && people.length > 0;
     return (
-      <Shell circles={circles} circleFilter={circleFilter} setCircleFilter={setCircleFilter} due={0} streak={0}>
+      <Shell {...shellProps} due={0} streak={0}>
         <div className="card mt-10 p-8 text-center text-gray-400">
-          No faces to study here yet. Add people from the ➕ tab.
+          {blockedByPhotos ? (
+            <>
+              None of these people have photos yet. Add photos from the Directory, or switch off
+              <span className="text-gray-200"> "Photos only"</span> to drill names without faces.
+            </>
+          ) : (
+            <>No faces to study here yet. Add people from the ➕ tab.</>
+          )}
         </div>
       </Shell>
     );
@@ -63,7 +76,7 @@ export default function MemoryTest({ people, circles, byCircle, onUpdate }) {
 
   if (!current) {
     return (
-      <Shell circles={circles} circleFilter={circleFilter} setCircleFilter={setCircleFilter} due={due} streak={streak}>
+      <Shell {...shellProps} due={due} streak={streak}>
         <div className="card mt-10 p-8 text-center">
           <p className="text-2xl">🎉</p>
           <p className="mt-2 font-medium text-white">Session complete</p>
@@ -77,7 +90,7 @@ export default function MemoryTest({ people, circles, byCircle, onUpdate }) {
   const circle = byCircle(current.circle_id);
 
   return (
-    <Shell circles={circles} circleFilter={circleFilter} setCircleFilter={setCircleFilter} due={due} streak={streak}>
+    <Shell {...shellProps} due={due} streak={streak}>
       <div className="mt-2 text-center text-xs text-gray-500">
         {idx + 1} / {queue.length}
       </div>
@@ -120,7 +133,7 @@ export default function MemoryTest({ people, circles, byCircle, onUpdate }) {
   );
 }
 
-function Shell({ children, circles, circleFilter, setCircleFilter, due, streak }) {
+function Shell({ children, circles, circleFilter, setCircleFilter, photosOnly, setPhotosOnly, due, streak }) {
   return (
     <div className="mx-auto max-w-md px-4 py-4">
       <div className="flex items-center justify-between">
@@ -130,17 +143,27 @@ function Shell({ children, circles, circleFilter, setCircleFilter, due, streak }
           <span className="text-gray-400">🔥 {streak}</span>
         </div>
       </div>
-      <select
-        className="field mt-3 w-auto"
-        value={circleFilter}
-        onChange={(e) => setCircleFilter(e.target.value)}
-      >
-        <option value="all">All circles</option>
-        {circles.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}</option>
-        ))}
-        <option value="none">No circle</option>
-      </select>
+      <div className="mt-3 flex items-center gap-2">
+        <select
+          className="field w-auto"
+          value={circleFilter}
+          onChange={(e) => setCircleFilter(e.target.value)}
+        >
+          <option value="all">All circles</option>
+          {circles.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+          <option value="none">No circle</option>
+        </select>
+        <button
+          className={`btn whitespace-nowrap border ${
+            photosOnly ? 'border-accent text-accent' : 'border-edge text-gray-300'
+          }`}
+          onClick={() => setPhotosOnly((v) => !v)}
+        >
+          Photos only
+        </button>
+      </div>
       {children}
     </div>
   );

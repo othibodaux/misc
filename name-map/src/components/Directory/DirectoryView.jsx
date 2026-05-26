@@ -8,11 +8,13 @@ export default function DirectoryView({ people, circles, byCircle, onUpdate, onD
   const [q, setQ] = useState('');
   const [circleFilter, setCircleFilter] = useState('all');
   const [sort, setSort] = useState('created');
+  const [needsPhoto, setNeedsPhoto] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     let list = people;
+    if (needsPhoto) list = list.filter((p) => !p.photo_url);
     if (circleFilter !== 'all') {
       list = list.filter((p) =>
         circleFilter === 'none' ? !p.circle_id : p.circle_id === circleFilter
@@ -34,7 +36,7 @@ export default function DirectoryView({ people, circles, byCircle, onUpdate, onD
       );
     else sorted.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
     return sorted;
-  }, [people, q, circleFilter, sort, byCircle]);
+  }, [people, q, circleFilter, sort, needsPhoto, byCircle]);
 
   const selected = people.find((p) => p.id === selectedId) || null;
 
@@ -56,6 +58,14 @@ export default function DirectoryView({ people, circles, byCircle, onUpdate, onD
           <option value="name">Name A–Z</option>
           <option value="circle">By circle</option>
         </select>
+        <button
+          className={`btn whitespace-nowrap border ${
+            needsPhoto ? 'border-accent text-accent' : 'border-edge text-gray-300'
+          }`}
+          onClick={() => setNeedsPhoto((v) => !v)}
+        >
+          Needs photo
+        </button>
       </div>
 
       <p className="mt-3 text-xs text-gray-500">{filtered.length} people</p>

@@ -34,6 +34,21 @@ export function usePeople(session) {
     [session]
   );
 
+  const bulkCreate = useCallback(
+    async (rows) => {
+      if (!rows.length) return [];
+      const withOwner = rows.map((r) => ({ ...r, owner_id: session.user.id }));
+      const { data, error } = await supabase
+        .from('nm_people')
+        .insert(withOwner)
+        .select();
+      if (error) throw error;
+      setPeople((prev) => [...(data || []), ...prev]);
+      return data || [];
+    },
+    [session]
+  );
+
   const update = useCallback(async (id, patch) => {
     const { data, error } = await supabase
       .from('nm_people')
@@ -52,5 +67,5 @@ export function usePeople(session) {
     setPeople((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
-  return { people, loading, reload: load, create, update, remove };
+  return { people, loading, reload: load, create, bulkCreate, update, remove };
 }

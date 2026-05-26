@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Avatar from '../shared/Avatar';
 import CircleBadge from '../shared/CircleBadge';
 import ProfileForm from '../AddPerson/ProfileForm';
+import { supabase } from '../../supabaseClient';
+import { uploadPhoto } from '../../lib/photos';
 
 function Contact({ icon, value, href }) {
   if (!value) return null;
@@ -22,6 +24,21 @@ export default function ProfileCard({ person, circle, circles, onUpdate, onDelet
   const [editing, setEditing] = useState(false);
   const [values, setValues] = useState(person);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const photoInputRef = useRef(null);
+
+  async function handlePhoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { data } = await supabase.auth.getUser();
+      const path = await uploadPhoto(data.user.id, file);
+      await onUpdate(person.id, { photo_url: path });
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function save() {
     setBusy(true);
@@ -64,7 +81,21 @@ export default function ProfileCard({ person, circle, circles, onUpdate, onDelet
     <div className="space-y-4">
       <div className="flex flex-col items-center text-center">
         <Avatar src={person.photo_url} name={person.name} size={88} />
-        <h2 className="mt-3 text-xl font-semibold text-white">{person.name}</h2>
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/jpg,image/webp"
+          className="hidden"
+          onChange={handlePhoto}
+        />
+        <button
+          className="mt-2 text-xs text-accent hover:underline disabled:opacity-50"
+          onClick={() => photoInputRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? 'Uploading…' : person.photo_url ? 'Change photo' : '+ Add photo'}
+        </button>
+        <h2 className="mt-2 text-xl font-semibold text-white">{person.name}</h2>
         {person.headline && <p className="text-sm text-gray-300">{person.headline}</p>}
         {person.company && <p className="text-sm text-gray-400">{person.company}</p>}
         {circle && (
