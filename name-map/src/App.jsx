@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import { useCircles } from './hooks/useCircles';
 import { usePeople } from './hooks/usePeople';
+import { useConnections } from './hooks/useConnections';
 import LoginPage from './components/Auth/LoginPage';
 import NavBar from './components/shared/NavBar';
 import MemoryTest from './components/Memory/MemoryTest';
@@ -35,8 +36,15 @@ export default function App() {
 function AuthedApp({ session }) {
   const { circles, byId } = useCircles(session);
   const { people, loading, create, bulkCreate, update, remove } = usePeople(session);
+  const { connections, add: addConnection, remove: removeConnection } = useConnections(session);
 
   const shared = { people, circles, byCircle: byId, onUpdate: update, onDelete: remove };
+  const graphShared = {
+    ...shared,
+    connections,
+    onAddConnection: addConnection,
+    onRemoveConnection: removeConnection,
+  };
 
   return (
     <div className="min-h-full pb-16">
@@ -46,8 +54,8 @@ function AuthedApp({ session }) {
       ) : (
         <Routes>
           <Route path="/" element={<MemoryTest {...shared} />} />
-          <Route path="/graph" element={<NetworkGraph {...shared} />} />
-          <Route path="/directory" element={<DirectoryView {...shared} />} />
+          <Route path="/graph" element={<NetworkGraph {...graphShared} />} />
+          <Route path="/directory" element={<DirectoryView {...graphShared} />} />
           <Route
             path="/add"
             element={

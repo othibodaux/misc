@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import Avatar from '../shared/Avatar';
 import CircleBadge from '../shared/CircleBadge';
 import ProfileForm from '../AddPerson/ProfileForm';
+import Connections from './Connections';
 import { supabase } from '../../supabaseClient';
 import { uploadPhoto } from '../../lib/photos';
 
@@ -20,7 +21,17 @@ function Contact({ icon, value, href }) {
   );
 }
 
-export default function ProfileCard({ person, circle, circles, onUpdate, onDelete }) {
+export default function ProfileCard({
+  person,
+  circle,
+  circles,
+  onUpdate,
+  onDelete,
+  people = [],
+  connections = [],
+  onAddConnection,
+  onRemoveConnection,
+}) {
   const [editing, setEditing] = useState(false);
   const [values, setValues] = useState(person);
   const [busy, setBusy] = useState(false);
@@ -124,6 +135,16 @@ export default function ProfileCard({ person, circle, circles, onUpdate, onDelet
           {person.notes || <span className="text-gray-500">No notes yet.</span>}
         </p>
       </div>
+
+      {onAddConnection && (
+        <Connections
+          person={person}
+          people={people}
+          connections={connections}
+          onAdd={onAddConnection}
+          onRemove={onRemoveConnection}
+        />
+      )}
 
       <div className="flex gap-2 pt-2">
         <button className="btn-ghost flex-1" onClick={() => { setValues(person); setEditing(true); }}>

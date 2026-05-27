@@ -3,8 +3,18 @@ import SearchBar from '../shared/SearchBar';
 import ProfileRow from './ProfileRow';
 import Drawer from '../shared/Drawer';
 import ProfileCard from '../Profile/ProfileCard';
+import { exportPeopleCsv } from '../../lib/exportCsv';
 
-export default function DirectoryView({ people, circles, byCircle, onUpdate, onDelete }) {
+export default function DirectoryView({
+  people,
+  circles,
+  byCircle,
+  onUpdate,
+  onDelete,
+  connections = [],
+  onAddConnection,
+  onRemoveConnection,
+}) {
   const [q, setQ] = useState('');
   const [circleFilter, setCircleFilter] = useState('all');
   const [sort, setSort] = useState('created');
@@ -42,7 +52,16 @@ export default function DirectoryView({ people, circles, byCircle, onUpdate, onD
 
   return (
     <div className="mx-auto max-w-md px-4 py-4">
-      <h1 className="mb-3 text-xl font-semibold text-white">Directory</h1>
+      <div className="mb-3 flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-white">Directory</h1>
+        <button
+          className="text-xs text-accent hover:underline disabled:opacity-40"
+          onClick={() => exportPeopleCsv(filtered, (id) => byCircle(id)?.name || '')}
+          disabled={filtered.length === 0}
+        >
+          Export CSV
+        </button>
+      </div>
       <SearchBar value={q} onChange={setQ} placeholder="Search name, company, notes…" />
 
       <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -90,6 +109,10 @@ export default function DirectoryView({ people, circles, byCircle, onUpdate, onD
               await onDelete(id);
               setSelectedId(null);
             }}
+            people={people}
+            connections={connections}
+            onAddConnection={onAddConnection}
+            onRemoveConnection={onRemoveConnection}
           />
         )}
       </Drawer>

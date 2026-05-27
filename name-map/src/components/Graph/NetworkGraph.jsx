@@ -3,7 +3,16 @@ import * as d3 from 'd3';
 import Drawer from '../shared/Drawer';
 import ProfileCard from '../Profile/ProfileCard';
 
-export default function NetworkGraph({ people, circles, byCircle, onUpdate, onDelete }) {
+export default function NetworkGraph({
+  people,
+  circles,
+  byCircle,
+  onUpdate,
+  onDelete,
+  connections = [],
+  onAddConnection,
+  onRemoveConnection,
+}) {
   const svgRef = useRef(null);
   const wrapRef = useRef(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -48,12 +57,27 @@ export default function NetworkGraph({ people, circles, byCircle, onUpdate, onDe
       return { x: cx + c.x * radius, y: cy + c.y * radius };
     }
 
+    const nodeIds = new Set(nodes.map((n) => n.id));
+    const links = connections
+      .filter((c) => nodeIds.has(c.person_a) && nodeIds.has(c.person_b))
+      .map((c) => ({ source: c.person_a, target: c.person_b }));
+
     const sim = d3
       .forceSimulation(nodes)
       .force('charge', d3.forceManyBody().strength(-90))
       .force('collide', d3.forceCollide().radius((d) => d.r + 4))
+      .force('link', d3.forceLink(links).id((d) => d.id).distance(70).strength(0.4))
       .force('x', d3.forceX((d) => center(d.person.circle_id).x).strength(0.18))
       .force('y', d3.forceY((d) => center(d.person.circle_id).y).strength(0.18));
+
+    const link = root
+      .append('g')
+      .attr('stroke', '#4f8ef7')
+      .attr('stroke-opacity', 0.35)
+      .selectAll('line')
+      .data(links)
+      .join('line')
+      .attr('stroke-width', 1.5);
 
     const node = root
       .append('g')
@@ -88,10 +112,17 @@ export default function NetworkGraph({ people, circles, byCircle, onUpdate, onDe
       .attr('fill', '#cbd5e1')
       .attr('font-size', 10);
 
-    sim.on('tick', () => node.attr('transform', (d) => `translate(${d.x},${d.y})`));
+    sim.on('tick', () => {
+      link
+        .attr('x1', (d) => d.source.x)
+        .attr('y1', (d) => d.source.y)
+        .attr('x2', (d) => d.target.x)
+        .attr('y2', (d) => d.target.y);
+      node.attr('transform', (d) => `translate(${d.x},${d.y})`);
+    });
 
     return () => sim.stop();
-  }, [people, circles, centers, byCircle]);
+  }, [people, circles, centers, byCircle, connections]);
 
   const selected = people.find((p) => p.id === selectedId) || null;
 
@@ -131,6 +162,10 @@ export default function NetworkGraph({ people, circles, byCircle, onUpdate, onDe
             circles={circles}
             onUpdate={onUpdate}
             onDelete={async (id) => { await onDelete(id); setSelectedId(null); }}
+            people={people}
+            connections={connections}
+            onAddConnection={onAddConnection}
+            onRemoveConnection={onRemoveConnection}
           />
         )}
       </Drawer>
